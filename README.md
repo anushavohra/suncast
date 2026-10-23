@@ -43,7 +43,11 @@ pip install -r requirements.txt
 * **Kaggle Solar Power Generation Data**: real power output from solar plants
 * **Retailer list**: solar retailers by city, compiled by the team
 
-Large data files are not stored in this repo. Download links will be added here.
+### Data Downloads
+
+Large data files are not stored in this repo. Cleaned datasets are available here:
+
+* Cleaned NASA POWER data (5 cities, 2024, hourly): [nasa_clean.csv](https://drive.google.com/file/d/1xFconkLj1P9UdFHTOLPeGQy2qwVUD6Ns/view?usp=drive_link)
 
 ## Running the Data Pipeline
 
