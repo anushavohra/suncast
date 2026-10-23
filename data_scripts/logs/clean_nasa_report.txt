@@ -1,0 +1,44 @@
+Loaded 5 files: ['islamabad_2024.csv', 'karachi_2024.csv', 'lahore_2024.csv', 'multan_2024.csv', 'peshawar_2024.csv']
+
+===== BEFORE CLEANING =====
+Rows: 43920
+Duplicate rows (city + timestamp): 0
+Missing values per column:
+    irradiance: 0
+    temp_c: 0
+    humidity: 0
+    wind_speed: 0
+
+Removed 0 duplicate rows
+Impossible values handled:
+    Negative irradiance set to 0: 0
+    Irradiance above 1361 set to NaN: 0
+    Nighttime irradiance set to 0: 0
+    Temperature outside -20 to 55 C set to NaN: 0
+    Humidity clipped to 0 to 100: 0
+    Wind speed outside 0 to 40 m/s set to NaN: 0
+
+Statistical outliers (1.5 x IQR), kept on purpose:
+    temp_c: 0
+    humidity: 0
+    wind_speed: 1931
+
+Dropped 0 rows that still had missing values after interpolation
+
+===== AFTER CLEANING =====
+Rows: 43920
+Duplicate rows (city + timestamp): 0
+Missing values per column:
+    irradiance: 0
+    temp_c: 0
+    humidity: 0
+    wind_speed: 0
+
+Rows per city:
+    Islamabad: 8784
+    Karachi: 8784
+    Lahore: 8784
+    Multan: 8784
+    Peshawar: 8784
+
+Saved cleaned data to data\processed\nasa_clean.csv
