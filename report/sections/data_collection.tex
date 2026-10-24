@@ -1,0 +1,65 @@
+\section{Data Collection}
+\label{sec:collection}
+
+SunCast needs three kinds of data: weather and sunlight for Pakistani cities, smog, and real solar panel output. Four sources cover them (Table~\ref{tab:sources}). All collection code is in the \texttt{data\_scripts/} folder of our repository, and the scripts write log files that we kept as evidence of each download.
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{p{3.1cm} p{4.0cm} p{2.9cm} p{3.4cm}}
+\toprule
+\textbf{Source} & \textbf{What it gives us} & \textbf{How we got it} & \textbf{Script} \\
+\midrule
+NASA POWER hourly API & Sunlight (W/m$^2$), temperature, humidity, wind speed & API, no key needed & \texttt{fetch\_nasa\_\allowbreak power.py} \\
+Open-Meteo Historical Weather API & Cloud cover (\%) & API, no key needed & \texttt{fetch\_\allowbreak openmeteo.py} \\
+Open-Meteo Air Quality API & PM2.5 ($\mu$g/m$^3$), our measure of smog & API, no key needed & \texttt{fetch\_\allowbreak openmeteo.py} \\
+Kaggle ``Solar Power Generation Data'' & Real power output of a solar plant, with its own weather sensor readings & Download from Kaggle & \texttt{load\_kaggle\_\allowbreak generation.py} \\
+Retailer list & Solar retailers by city & Compiled by hand by the team & \texttt{data/retailers.csv} \\
+\bottomrule
+\end{tabular}
+\caption{Data sources used in SunCast.}
+\label{tab:sources}
+\end{table}
+
+\subsection{Study area and period}
+We collected data for five cities that together cover very different climates: Lahore, Karachi, Islamabad, Peshawar and Multan. Each city is represented by one coordinate point, and all APIs were queried for the same points. We used the full year 2024, hourly, which gives $5 \times 8{,}784 = 43{,}920$ hourly records (2024 was a leap year).
+
+\subsection{NASA POWER (sunlight, temperature, humidity, wind)}
+\texttt{fetch\_nasa\_power.py} requests four variables from the NASA POWER hourly point API with the renewable energy community setting: all-sky surface sunlight (\texttt{ALLSKY\_SFC\_SW\_DWN}, which already accounts for clouds), air temperature at 2~m, relative humidity at 2~m and wind speed at 10~m. The script asks for one month at a time for each city, retries a request up to three times if it fails, and pauses one second between requests to avoid overloading the service. NASA returns times in UTC, so the script converts them to Pakistan time (Asia/Karachi) before saving. Missing readings are marked with the code $-999$ in the API output, and our cleaning step replaces them (see the Data Cleaning section). The log (\texttt{data\_scripts/logs/fetch\_nasa\_power.log}) records every request: all 12 months were downloaded for all 5 cities, giving 8{,}784 rows per city.
+
+\subsection{Open-Meteo (cloud cover and smog)}
+NASA POWER does not give cloud cover or air quality, so \texttt{fetch\_openmeteo.py} adds them from two Open-Meteo APIs: the Historical Weather API for hourly cloud cover, and the Air Quality API for hourly PM2.5. Both are requested in the Asia/Karachi time zone so their timestamps line up with the NASA data. Because the NASA times were shifted from UTC to Pakistan time (five hours ahead), the last hours of December 2024 fall on 1 January 2025. The script therefore asks for one extra day, which is why each city has 8{,}808 Open-Meteo rows (366 days plus one extra day). Table~\ref{tab:evidence} summarises the evidence from the log files.
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{p{5.0cm} p{2.4cm} p{4.8cm}}
+\toprule
+\textbf{Step} & \textbf{Rows} & \textbf{Log file} \\
+\midrule
+NASA POWER, per city & 8{,}784 & \texttt{fetch\_nasa\_power.log} \\
+NASA POWER, five cities, cleaned & 43{,}920 & \texttt{clean\_nasa\_report.txt} \\
+Open-Meteo, per city & 8{,}808 & \texttt{fetch\_openmeteo.log} \\
+After merge with NASA data & 43{,}920 & \texttt{fetch\_openmeteo.log} \\
+Missing cloud cover / PM2.5 after merge & 0 / 0 & \texttt{fetch\_openmeteo.log} \\
+\bottomrule
+\end{tabular}
+\caption{Row counts recorded by the collection scripts.}
+\label{tab:evidence}
+\end{table}
+
+\subsection{Merging weather sources}
+The NASA data and the Open-Meteo data are joined on city and timestamp. We used a left join so that every NASA row is kept, and added cloud cover and PM2.5 where the timestamps match. All 43{,}920 rows matched, with no missing cloud cover or PM2.5 values. The script also checks that cloud cover stays between 0 and 100\% and that PM2.5 is not negative (any invalid value would be set to missing and filled only if the gap is three hours or shorter), but no value needed fixing. The script saves two versions of the merged table:
+\begin{itemize}
+  \item \texttt{merged\_weather.csv}, which keeps the city name, used for exploratory analysis;
+  \item \texttt{merged\_weather\_encoded.csv}, where the city column is one hot encoded into five 0/1 columns (\texttt{city\_Lahore}, \texttt{city\_Karachi}, and so on), used for modelling.
+\end{itemize}
+
+\subsection{Kaggle solar plant data}
+Weather data alone cannot tell us how much power a panel produces, so we need a measured output as the training target. We use the public Kaggle dataset \emph{Solar Power Generation Data} by Ani Kannal (\url{https://www.kaggle.com/datasets/anikannal/solar-power-generation-data}). It contains two files for one solar plant: \texttt{Plant\_1\_Generation\_Data.csv} (power output of each inverter, recorded every 15 minutes) and \texttt{Plant\_1\_Weather\_Sensor\_Data.csv} (sunlight, ambient and module temperature measured at the plant). The Kaggle data comes from a plant in India in 2020 and the file has no city column, so it is used to learn how weather turns into power, while the city-specific weather features come from NASA POWER and Open-Meteo. \texttt{load\_kaggle\_generation.py} loads both files and prints their shapes.
+
+\subsection{Retailer list}
+For the app's retailer suggestions we compiled a directory of 39 solar retailers and installers across the five study cities (8 in Lahore, 8 in Karachi, 8 in Islamabad, 7 in Peshawar and 8 in Multan). Each entry has four columns: name, area, contact and rating. Business names, areas, phone numbers and customer ratings were collected by hand from public Google Maps listings in October 2026. The directory is stored in \texttt{data/retailers.csv} and will be used by the web app to suggest local retailers to users.
+
+\subsection{Reproducibility}
+Large data files are not stored in the repository (they are excluded by \texttt{.gitignore}). Anyone can recreate them by running the scripts in this order: \texttt{fetch\_nasa\_power.py}, \texttt{clean\_nasa.py}, \texttt{fetch\_openmeteo.py}. The repository is at \url{https://github.com/anushavohra/suncast}, and a link to the cleaned NASA data is in the README.

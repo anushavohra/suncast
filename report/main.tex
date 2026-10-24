@@ -1,0 +1,164 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[margin=2.5cm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{float}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{caption}
+
+\hypersetup{colorlinks=true, linkcolor=blue!50!black, urlcolor=blue!50!black}
+\graphicspath{{figures/}{../figures/}}   % works in Overleaf (figures/) and in the repo (../figures/)
+
+% Red marker for anything a teammate still has to fill in. Search for TODO before submitting.
+\newcommand{\todo}[1]{\textcolor{red}{[TODO: #1]}}
+
+\title{SunCast: Forecasting Rooftop Solar Output and Savings in Pakistan\\
+\large Deliverable 1: Problem Definition and Data Pipeline}
+\author{Anoosha Rizwan Vohra (24L-3096) \and Kainat Afzal (24L-3084) \and Manumha Nadeem (24L-3097)}
+\date{\today}
+
+\begin{document}
+\maketitle
+\tableofcontents
+\newpage
+
+\section{Introduction}
+Rooftop solar has become one of the most talked about ways for households in Pakistan to deal with rising electricity bills. Installing a system is a large investment, but most people decide with little more than a salesperson's estimate or an online calculator that uses yearly averages. Those estimates ignore the things that actually change how much power panels produce from day to day, such as clouds, smog, heat, and the climate of each city.
+ 
+ SunCast is a web application that aims to close this gap. A user enters their city, the size of their solar system, and their electricity tariff, and the app forecasts how much power the system will generate over the next few days using live weather data and a machine learning model. The forecast is converted into estimated savings in rupees, and a chatbot answers common solar questions and suggests retailers in the user's city.
+ 
+This report covers the first deliverable of the project: defining the problem and building the data pipeline. Section 2 and Section 3 describe the problem and who the app is for, and Section 4 explains why machine learning is needed. Sections 5 to 7 describe how we collected, cleaned, and prepared the data, and Section 8 presents our exploratory analysis. Section 9 outlines the next steps.
+ 
+
+\section{Problem Statement}
+
+Electricity prices in Pakistan have gone up sharply over the last few years, and for many households the monthly bill has become one of their biggest expenses. Because of this, more and more people are looking at rooftop solar as a way to cut costs. The problem is that installing solar is a big financial decision, and most people make it with very little reliable information about what the system will actually do for them.
+ 
+Most solar calculators available online work with yearly averages. They take the size of the system, multiply it by an average amount of sunlight for the region, and give a single number. This approach misses several things that have a real effect on how much power panels produce in Pakistan:
+ 
+\begin{itemize}
+    \item \textbf{Clouds and weather:} output changes a lot from day to day, and a yearly average says nothing about what to expect this week.
+    \item \textbf{Smog and dust:} in cities like Lahore, winter smog blocks a noticeable share of sunlight for weeks at a time, which simple calculators ignore completely.
+    \item \textbf{Heat:} solar panels become less efficient as they get hotter, so the hottest months do not produce as much as the strong sunlight would suggest.
+    \item \textbf{Location:} sunlight and weather patterns differ between cities like Karachi, Lahore, and Peshawar, but many tools treat the whole country the same way.
+\end{itemize}
+ 
+This creates two problems. People who are thinking about buying solar cannot tell how much they will really save or whether the investment is worth it. People who already have solar cannot tell whether their system is performing as it should, or plan their electricity use around the days and hours when generation will be high.
+ 
+On top of this, the practical information people need is scattered. Common questions about inverter types, whether a battery is worth the cost, how net metering works, and which retailers in their city are trustworthy are usually answered through word of mouth or sales pitches, which may not be accurate or unbiased.
+ 
+SunCast addresses these problems with a web application that forecasts solar generation for a specific location using live weather data and a machine learning model trained on historical sunlight, weather, and air quality data. The forecast is converted into estimated savings in rupees, and a built in chatbot answers common solar questions and suggests retailers in the user's city.
+
+
+\section{Target Audience}
+
+SunCast is designed for the following groups of users:
+ 
+\begin{itemize}
+    \item \textbf{Homeowners considering solar:} people who want to know how much a system of a given size would generate at their location and how much money it would save before they spend on an installation.
+    \item \textbf{Existing solar owners:} people who already have panels and want to know what to expect over the next few days, check whether their system is performing normally, and plan heavy electricity use (such as running air conditioners, washing machines, or water pumps) for high generation hours.
+    \item \textbf{Small businesses:} shops, clinics, schools, and offices that run during daytime hours and want to understand how much of their electricity demand solar could cover.
+    \item \textbf{First time buyers with little technical knowledge:} users who do not understand terms like inverter capacity or net metering and need simple, trustworthy answers before talking to a retailer.
+\end{itemize}
+ 
+For the first version, the app covers five major cities: Lahore, Karachi, Islamabad, Peshawar, and Multan. These cities were chosen because they cover different climates across the country, from the humid coastal weather of Karachi to the smoggy winters of Lahore and the hotter, drier conditions of Multan. The system is built so that more cities can be added later by including their coordinates in the data pipeline.
+
+
+\section{AI Justification}
+Solar output depends on many factors that affect each other in complicated,
+nonlinear ways: cloud cover, smog and dust that block sunlight, panels losing
+efficiency when they get hot, and changes between seasons. Our analysis
+supports this: sunlight varies strongly by month and city, and cloud cover
+and PM2.5 each reduce it. A fixed formula or rule-based program uses fixed
+averages, so it cannot capture these effects together. A machine learning
+model can learn them directly from real data and give a more accurate
+forecast for each city.
+
+The chatbot also needs AI. People ask solar questions (inverters, batteries,
+net metering) in plain, everyday language, and rule-based code cannot handle
+so many different ways of asking the same question.
+
+\input{sections/data_collection}
+
+\section{Data Cleaning}
+
+We cleaned two datasets: the NASA POWER weather data (\texttt{clean\_nasa.py}) and the Kaggle solar plant data (\texttt{clean\_generation.py}). The Open-Meteo values were validated during the merge, as described in the Data Collection section. Each script prints a before and after summary, and the NASA script saves it to \texttt{data\_scripts/logs/clean\_nasa\_report.txt}.
+ 
+\subsection{NASA POWER weather data}
+ 
+\texttt{clean\_nasa.py} combines the hourly files for all five cities into one table, renames the NASA variable codes to readable names (irradiance, temperature, humidity, and wind speed), and applies the following steps:
+ 
+\begin{itemize}
+    \item \textbf{Missing values:} NASA POWER marks missing readings with the code $-999$. These are replaced with empty values, and gaps of up to three hours are filled by time based interpolation, one city at a time so cities never mix. Longer gaps are dropped.
+    \item \textbf{Duplicates:} rows with the same city and timestamp are removed.
+    \item \textbf{Impossible values:} negative irradiance, and any irradiance between 21:00 and 04:00 when the sun is always down, are set to zero. Irradiance above the solar constant (about 1361 W/m$^2$), temperature outside $-20$ to $55\,^{\circ}$C, humidity outside 0 to 100\%, and wind speed outside 0 to 40 m/s are treated as errors.
+    \item \textbf{Statistical outliers:} values more than 1.5 times the interquartile range beyond the quartiles are counted but kept, because heatwaves and windy days are real weather that the model needs to learn from.
+\end{itemize}
+ 
+Table~\ref{tab:nasa_cleaning} shows the results. The 2024 NASA POWER data passed every check, with no missing values, duplicates, or physically impossible readings, which confirms it as a reliable source. The only notable finding was 1,931 statistical outliers in wind speed. Wind speed is usually low with occasional strong gusts, so the interquartile range rule flags many real windy and stormy hours; we kept them on purpose.
+ 
+\begin{table}[h]
+\centering
+\begin{tabular}{lr}
+\hline
+\textbf{Check} & \textbf{Count} \\
+\hline
+Rows before cleaning & 43,920 \\
+Missing values (all four columns) & 0 \\
+Duplicate rows removed & 0 \\
+Impossible values fixed & 0 \\
+Wind speed outliers (kept) & 1,931 \\
+Temperature and humidity outliers & 0 \\
+Rows after cleaning & 43,920 \\
+\hline
+\end{tabular}
+\caption{Results of cleaning the NASA POWER data (five cities, 2024).}
+\label{tab:nasa_cleaning}
+\end{table}
+ 
+Claude finished the response
+
+\subsection{Kaggle plant data}
+\texttt{clean\_generation.py} cleans the Kaggle plant data and merges the
+generation file with the weather sensor file on the timestamp.
+\begin{itemize}
+  \item Missing values: none found.
+  \item Duplicate rows (same timestamp and inverter): none found.
+  \item Negative power values: none found.
+  \item Merge with the sensor data: 68,778 rows became 68,774 rows,
+        because 4 generation rows had no matching sensor reading.
+  \item Inverter faults: 63 rows where sunlight was present
+        (irradiation above 0.2) but the inverter output was zero were
+        removed as outliers.
+  \item Night readings: no rows had sunlight above zero at night.
+\end{itemize}
+The cleaned Kaggle table has 68,711 rows.
+
+\section{Feature Strategy}
+\texttt{feature\_engineering.py} prepares the cleaned Kaggle table for
+modelling.
+\begin{itemize}
+  \item \textbf{Sine/cosine encoding} of hour and month, because time is a
+        cycle (hour 23 is close to hour 0, and December is close to January).
+  \item \textbf{One hot encoding} of the inverter ID (22 inverters).
+        The city is one hot encoded separately in the merged weather table
+        (see the Data Collection section), because the Kaggle data has no
+        city column.
+  \item \textbf{StandardScaler} on ambient temperature, module temperature
+        and irradiation, so that all inputs have mean 0 and standard
+        deviation 1. DC and AC power are the targets, so they are not scaled.
+  \item \texttt{DAILY\_YIELD} and \texttt{TOTAL\_YIELD} were removed because
+        they already contain the power result and would let the model cheat.
+\end{itemize}
+The final feature table has 68,711 rows and 31 columns.
+
+\input{sections/eda}
+
+\section{Next Steps}
+With the data pipeline complete, the next stage of the project has four parts. First, we will train machine learning models that predict hourly solar output from the weather features and the city, and evaluate them on a held-out test set. Second, we will compare these models against a simple physics-based baseline, so that we can show how much the data-driven approach improves on a fixed formula. Third, we will build a web app where a user selects a city and system size and sees the forecast output, expected savings and nearby retailers from \texttt{data/retailers.csv}. Finally, we will add a chatbot that answers common questions about rooftop solar in Pakistan.
+
+\end{document}
