@@ -9,6 +9,7 @@ Strong link: Sunlight and Temperature (r = 0.45).
 Strong link: Sunlight and Humidity (r = -0.42).
 Strong link: Temperature and Humidity (r = -0.28).
 Sunlight vs cloud cover: r = -0.20; sunlight vs PM2.5: r = -0.18.
+Sunlight vs panel DC power on the Kaggle plant: r = 0.993 (68711 readings).
 Cloud cover vs midday sunlight: r = -0.41.
 Midday sunlight averages 727 W/m2 under clear skies (<10% cloud) and 493 W/m2 under overcast skies (>=90%), a drop of 32%.
 Missing values: none found in any raw column.
