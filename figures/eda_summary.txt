@@ -1,0 +1,14 @@
+Merged weather data: 43920 rows, 5 cities, 2024-01-01 to 2025-01-01.
+Islamabad: sunniest month May (7.43 kWh/m2/day), dullest Dec (2.79).
+Karachi: sunniest month May (7.22 kWh/m2/day), dullest Aug (4.09).
+Lahore: sunniest month May (7.16 kWh/m2/day), dullest Jan (1.74).
+Multan: sunniest month May (7.20 kWh/m2/day), dullest Jan (1.85).
+Peshawar: sunniest month Jun (7.52 kWh/m2/day), dullest Jan (2.96).
+Yearly average sunlight (kWh/m2/day): Karachi 5.31, Peshawar 5.06, Islamabad 4.80, Multan 4.77, Lahore 4.72
+Strong link: Sunlight and Temperature (r = 0.45).
+Strong link: Sunlight and Humidity (r = -0.42).
+Strong link: Temperature and Humidity (r = -0.28).
+Sunlight vs cloud cover: r = -0.20; sunlight vs PM2.5: r = -0.18.
+Cloud cover vs midday sunlight: r = -0.41.
+Midday sunlight averages 727 W/m2 under clear skies (<10% cloud) and 493 W/m2 under overcast skies (>=90%), a drop of 32%.
+Missing values: none found in any raw column.
