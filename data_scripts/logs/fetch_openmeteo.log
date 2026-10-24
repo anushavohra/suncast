@@ -1,0 +1,18 @@
+2026-10-24 09:47:42,707 | INFO | Starting Open-Meteo download: 5 cities, year 2024
+2026-10-24 09:47:47,063 | INFO | Lahore: 8808 weather rows, 8808 air quality rows
+2026-10-24 09:47:47,099 | INFO | Lahore: saved 8808 rows to data\raw\openmeteo\lahore_2024.csv
+2026-10-24 09:47:51,141 | INFO | Karachi: 8808 weather rows, 8808 air quality rows
+2026-10-24 09:47:51,164 | INFO | Karachi: saved 8808 rows to data\raw\openmeteo\karachi_2024.csv
+2026-10-24 09:47:55,318 | INFO | Islamabad: 8808 weather rows, 8808 air quality rows
+2026-10-24 09:47:55,344 | INFO | Islamabad: saved 8808 rows to data\raw\openmeteo\islamabad_2024.csv
+2026-10-24 09:48:00,526 | INFO | Peshawar: 8808 weather rows, 8808 air quality rows
+2026-10-24 09:48:00,555 | INFO | Peshawar: saved 8808 rows to data\raw\openmeteo\peshawar_2024.csv
+2026-10-24 09:48:06,135 | INFO | Multan: 8808 weather rows, 8808 air quality rows
+2026-10-24 09:48:06,155 | INFO | Multan: saved 8808 rows to data\raw\openmeteo\multan_2024.csv
+2026-10-24 09:48:06,226 | INFO | Loaded NASA clean data: 43920 rows
+2026-10-24 09:48:06,254 | INFO | After merge: 43920 rows
+2026-10-24 09:48:06,257 | INFO | Missing values after merge: {'cloud_cover': 0, 'pm25': 0}
+2026-10-24 09:48:06,326 | INFO | Dropped 0 rows still missing cloud cover or PM2.5
+2026-10-24 09:48:06,595 | INFO | Saved 43920 rows to data\processed\merged_weather.csv
+2026-10-24 09:48:06,839 | INFO | Saved 43920 rows, 12 columns to data\processed\merged_weather_encoded.csv
+2026-10-24 09:48:06,839 | INFO | Finished.
