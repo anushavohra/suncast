@@ -20,7 +20,7 @@ def load_split():
     return X_train, X_val, X_test, y_train, y_val, y_test
 
 
-def build_model(learning_rate=0.1, max_depth=None, max_iter=200):
+def build_model(learning_rate=0.2, max_depth=6, max_iter=300):
     """Gradient boosting regressor with squared error loss."""
     return HistGradientBoostingRegressor(
         loss="squared_error",
