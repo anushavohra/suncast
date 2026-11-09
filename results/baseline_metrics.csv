@@ -1,0 +1,5 @@
+model,split,k,MAE,RMSE,R2
+Physics baseline (sunlight + temperature),validation,14868.74,202.12,444.34,0.9879
+Physics baseline (sunlight + temperature),test,14868.74,208.32,466.9,0.9866
+Physics baseline (sunlight only),validation,13391.59,229.33,483.85,0.9856
+Physics baseline (sunlight only),test,13391.59,234.89,503.25,0.9844

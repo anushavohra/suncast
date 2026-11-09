@@ -1,0 +1,4 @@
+split,rows,share_percent,mean_dc_power,std_dc_power,zero_output_percent
+train,48097,70.0,3149.91,4039.76,46.4
+validation,10307,15.0,3145.62,4035.85,46.6
+test,10307,15.0,3155.23,4026.74,46.2
