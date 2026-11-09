@@ -1,0 +1,5 @@
+Model,month,n,MAE,mean_actual,bias,RMSE
+Gradient boosting,5,4947,170.59,3358.2,0.27,386.73
+Gradient boosting,6,5360,137.89,2967.91,6.28,352.21
+Neural network,5,4947,196.84,3358.2,-32.05,426.87
+Neural network,6,5360,161.1,2967.91,-21.56,408.63

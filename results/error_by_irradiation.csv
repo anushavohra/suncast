@@ -1,0 +1,11 @@
+Model,irr_band,n,MAE,mean_actual,bias,RMSE
+Gradient boosting,0 (night),4541,2.96,0.0,0.3,4.09
+Gradient boosting,0-0.2,1739,50.24,1055.22,-3.03,80.44
+Gradient boosting,0.2-0.5,1750,245.43,5022.82,2.18,396.33
+Gradient boosting,0.5-0.8,1565,458.53,8639.99,14.14,680.48
+Gradient boosting,>0.8,712,470.68,11761.81,18.17,743.8
+Neural network,0 (night),4541,2.87,0.0,0.78,4.14
+Neural network,0-0.2,1739,75.01,1055.22,-30.3,106.69
+Neural network,0.2-0.5,1750,285.65,5022.82,-84.46,479.89
+Neural network,0.5-0.8,1565,509.08,8639.99,-25.25,757.92
+Neural network,>0.8,712,557.89,11761.81,-52.89,816.41
