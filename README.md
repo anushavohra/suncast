@@ -8,9 +8,9 @@ The forecast comes from a machine learning model trained on historical sunlight,
 
 | Member | Role |
 |---|---|
-| Anoosha Rizwan Vohra (24L-3096) | Repo setup, NASA POWER data collection and cleaning |
-| Kainat Afzal (24L-3084) | Solar generation data, feature engineering |
-| Manumha Nadeem (24L-3097) | Weather and air quality data, EDA, report |
+| Anoosha Rizwan Vohra (24L-3096) | Repo setup, NASA POWER data collection and cleaning, data split, physics baseline |
+| Kainat Afzal (24L-3084) | Solar generation data, feature engineering, models and tuning |
+| Manumha Nadeem (24L-3097) | Weather and air quality data, EDA, evaluation, bias check, report |
 
 ## Project Structure
 
@@ -22,11 +22,14 @@ suncast/
 │   ├── raw/              # raw downloaded data (not tracked by git)
 │   ├── processed/        # cleaned data (not tracked by git)
 │   └── retailers.csv     # solar retailers in the 5 cities
+├── src/                  # data split, baseline, models, tuning, evaluation, bias check
+├── models/               # trained model weights (not tracked by git, see Model Weights)
+├── results/              # metrics, tuning tables and bias check results
+├── figures/              # charts produced by the scripts
 ├── report/               # LaTeX source and compiled PDF
 │   ├── main.tex
 │   ├── sections/
-│   ├── figures/
-│   └── SunCast_Deliverable_1.pdf
+│   └── figures/
 ├── requirements.txt
 └── README.md
 ```
@@ -55,6 +58,14 @@ Large data files are not stored in this repo. Cleaned datasets are available her
 
 * Cleaned NASA POWER data (5 cities, 2024, hourly): [nasa_clean.csv](https://drive.google.com/file/d/1xFconkLj1P9UdFHTOLPeGQy2qwVUD6Ns/view?usp=drive_link)
 
+### Model Weights
+
+Trained models are not stored in this repo. Download them and place them in a `models/` folder in the repo root:
+
+* [Model weights folder](https://drive.google.com/drive/folders/1vSJJs9_Jk7Rc4F996mwIiEv5_G7To9KA?usp=drive_link)
+  * `solar_model.joblib`: gradient boosting model (Scikit-Learn)
+  * `solar_nn.pt`: neural network (PyTorch)
+
 ## Running the Data Pipeline
 
 **Step 1:** Download `Plant_1_Generation_Data.csv` and `Plant_1_Weather_Sensor_Data.csv` from the Kaggle link above and place them in `data/raw/`.
@@ -76,6 +87,25 @@ python data_scripts/feature_engineering.py
 python data_scripts/eda.py
 ```
 
+## Running the Models
+
+Run these after the data pipeline, from the repo root:
+
+```bash
+python src/split_data.py          # 70/15/15 split, checked against model.py
+python src/physics_baseline.py    # fixed formula baseline
+python src/model.py               # gradient boosting
+python src/tune.py                # hyperparameter search
+python src/nn_model.py            # PyTorch neural network
+python src/evaluate.py            # test set metrics
+python src/bias_check.py          # error by inverter, hour and month
+```
+
+To skip training, download the model weights above into `models/` and run `evaluate.py` and `bias_check.py` directly.
+
 ## Report
 
-The Deliverable 1 report (Problem Definition and Data Pipeline) is in [`report/SunCast_Deliverable_1.pdf`](report/SunCast_Deliverable_1.pdf), with the LaTeX source in the same folder.
+The LaTeX source and compiled PDFs are in the `report/` folder:
+
+* Deliverable 1 (Problem Definition and Data Pipeline): [`report/SunCast_Deliverable_1.pdf`](report/SunCast_Deliverable_1.pdf)
+* Deliverable 2 (Model Development and Evaluation): `report/SunCast_Deliverable_2.pdf`, added once the report is final
