@@ -1,0 +1,11 @@
+\section{Limitations}
+\begin{itemize}
+    \item \textbf{Random split and near-duplicate rows.} In the Kaggle data all 22 inverters are recorded at the same 15-minute timestamps, and every inverter row at a timestamp has the same weather sensor values. A random split therefore puts some rows of a timestamp in the training set and others in the test set, and neighbouring timestamps are also very similar. The model can partly ``remember'' the weather of a moment it has already seen, so our test scores are probably better than what we would get when forecasting a new day. A split by date (train on earlier days, test on later days) would be a stricter test and is left as future work.
+    \item \textbf{One plant, one short period.} The Kaggle data comes from a single plant in India and covers only May and June 2020. We have no winter, monsoon or smog periods, and no Pakistani plant, so we could not test the model by city.
+    \item \textbf{Inputs differ between training and the app.} The model is trained on sunlight, air temperature and module temperature measured at the plant. In the app the weather inputs will come from forecasts (NASA POWER and Open-Meteo), which have their own errors that are not included in our test results. Weather services also do not give module temperature, so the app will have to estimate it.
+    \item \textbf{No direct cloud or smog input.} The Kaggle data has no cloud cover or PM2.5, so the model sees these effects only through the measured sunlight.
+    \item \textbf{Scaling before the split.} The scaler for temperature and sunlight was fitted on all rows before the split. The effect is probably small, but a strict pipeline would fit it on the training set only.
+    \item \textbf{Faults were removed.} Cleaning removed 63 rows with an inverter fault, so the model has never seen faulty behaviour and cannot predict sudden drops like the largest errors in the error analysis.
+    \item \textbf{Limited tuning.} The neural network was tuned over only eight settings with 30 epochs each, so a better network may exist. The comparison with gradient boosting should be read with this in mind.
+    \item \textbf{Easy binary task.} The high versus low task is easy (AUC-ROC about 1.00), so it does not separate the two models well.
+\end{itemize}

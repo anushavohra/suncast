@@ -9,6 +9,8 @@
 \usepackage{xcolor}
 \usepackage{hyperref}
 \usepackage{caption}
+\usepackage{tikz}
+\usetikzlibrary{positioning, arrows.meta}
 
 \hypersetup{colorlinks=true, linkcolor=blue!50!black, urlcolor=blue!50!black}
 \graphicspath{{figures/}{../figures/}}   % works in Overleaf (figures/) and in the repo (../figures/)
@@ -17,7 +19,7 @@
 \newcommand{\todo}[1]{\textcolor{red}{[TODO: #1]}}
 
 \title{SunCast: Forecasting Rooftop Solar Output and Savings in Pakistan\\
-\large Deliverable 1: Problem Definition and Data Pipeline}
+\large Deliverables 1 and 2: Data Pipeline, Models and Evaluation}
 \author{Anoosha Rizwan Vohra (24L-3096) \and Kainat Afzal (24L-3084) \and Manumha Nadeem (24L-3097)}
 \date{\today}
 
@@ -31,7 +33,7 @@ Rooftop solar has become one of the most talked about ways for households in Pak
  
  SunCast is a web application that aims to close this gap. A user enters their city, the size of their solar system, and their electricity tariff, and the app forecasts how much power the system will generate over the next few days using live weather data and a machine learning model. The forecast is converted into estimated savings in rupees, and a chatbot answers common solar questions and suggests retailers in the user's city.
  
-This report covers the first deliverable of the project: defining the problem and building the data pipeline. Section 2 and Section 3 describe the problem and who the app is for, and Section 4 explains why machine learning is needed. Sections 5 to 7 describe how we collected, cleaned, and prepared the data, and Section 8 presents our exploratory analysis. Section 9 outlines the next steps.
+This report covers the first two deliverables of the project. The first part defines the problem and builds the data pipeline: the problem and target audience, why machine learning is needed, how we collected, cleaned, and prepared the data, and our exploratory analysis. The second part covers the models: their architecture and hyperparameters, how we split the data for training, validation, and testing, a physics baseline to compare against, and the evaluation, error analysis, and bias check. The report ends with the next steps toward the web application.
  
 
 \section{Problem Statement}
@@ -120,7 +122,7 @@ Rows after cleaning & 43,920 \\
 \label{tab:nasa_cleaning}
 \end{table}
  
-Claude finished the response
+
 
 \subsection{Kaggle plant data}
 \texttt{clean\_generation.py} cleans the Kaggle plant data and merges the
@@ -158,7 +160,180 @@ The final feature table has 68,711 rows and 31 columns.
 
 \input{sections/eda}
 
+% ===== Deliverable 2 =====
+\section{Model Architecture and Implementation}
+
+\subsection{Frameworks and Task}
+The task is regression: predict the DC power (kW) of a solar plant from
+weather and time inputs. We built two models and compared them: a neural
+network in PyTorch (\texttt{src/nn\_model.py}) and a gradient boosting model
+in Scikit-Learn (\texttt{src/model.py}). The hyperparameter searches are in
+\texttt{src/tune.py} and \texttt{src/nn\_model.py}.
+
+\subsection{Inputs and Target}
+There are 29 input features: ambient temperature, module temperature and
+irradiation (scaled); sine and cosine of hour and month (4); and the one hot
+encoded inverter ID (22). The target is \texttt{DC\_POWER}.
+\texttt{AC\_POWER} is not used as an input because it is almost the same as
+the target and would let the model cheat. Both models use exactly the same
+train/validation/test split, which is described in the next section. The
+validation set was used for tuning; the test set was kept for the final
+evaluation.
+
+\subsection{Neural Network}
+The network is a fully connected feed-forward network with two hidden layers
+(Figure~\ref{fig:nn}).
+\begin{itemize}
+  \item \textbf{Layers:} 29 inputs, then two hidden layers of 64 units each
+        with ReLU activation and dropout, then 1 output unit.
+  \item \textbf{Loss function:} mean squared error (MSE). The target was
+        divided by 1000 so that the loss values stay small.
+  \item \textbf{Optimizer:} Adam.
+  \item \textbf{Training:} 30 epochs, mini-batches, random seed 42.
+\end{itemize}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+  node distance=5mm,
+  box/.style={draw, rounded corners, align=center, minimum height=12mm,
+              minimum width=20mm, font=\scriptsize},
+  arr/.style={-{Stealth[length=2mm]}, thick}]
+  \node[box] (in) {Input\\29 features};
+  \node[box, right=of in] (h1) {Linear 64\\ReLU\\Dropout};
+  \node[box, right=of h1] (h2) {Linear 64\\ReLU\\Dropout};
+  \node[box, right=of h2] (o) {Linear 1};
+  \node[box, right=of o] (p) {Predicted\\DC power};
+  \draw[arr] (in) -- (h1);
+  \draw[arr] (h1) -- (h2);
+  \draw[arr] (h2) -- (o);
+  \draw[arr] (o) -- (p);
+\end{tikzpicture}
+\caption{Architecture of the neural network.}
+\label{fig:nn}
+\end{figure}
+
+\subsection{Hyperparameters of the Neural Network}
+We tested two learning rates, two batch sizes and two dropout values
+(8 settings). All results are on the validation set
+(Table~\ref{tab:nntuning}).
+
+\begin{table}[H]
+\centering
+\caption{Neural network hyperparameters tested (best row in bold).}
+\label{tab:nntuning}
+\begin{tabular}{rrrrrr}
+\toprule
+Learning rate & Batch size & Dropout & MAE & RMSE & $R^2$ \\
+\midrule
+\textbf{0.001} & \textbf{64} & \textbf{0.0} & \textbf{174.37} & \textbf{398.71} & \textbf{0.9902} \\
+0.001 & 64 & 0.2 & 202.10 & 404.78 & 0.9899 \\
+0.001 & 256 & 0.0 & 178.59 & 399.05 & 0.9902 \\
+0.001 & 256 & 0.2 & 258.08 & 429.08 & 0.9887 \\
+0.01 & 64 & 0.0 & 177.15 & 399.98 & 0.9902 \\
+0.01 & 64 & 0.2 & 251.46 & 434.28 & 0.9884 \\
+0.01 & 256 & 0.0 & 197.43 & 401.48 & 0.9901 \\
+0.01 & 256 & 0.2 & 419.19 & 528.50 & 0.9829 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The best setting (learning rate 0.001, batch size 64, dropout 0.0) had the
+lowest validation RMSE (398.71). Dropout of 0.2 made the results worse in
+every pair. Dropout is meant to reduce overfitting, but our data is large
+(48,097 training rows) and has few input features, so the network had little
+to overfit and the extra noise only removed useful information.
+Figure~\ref{fig:nnloss} shows the training and validation loss of the best
+setting.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.7\textwidth]{nn_loss_curve.png}
+\caption{Training and validation loss of the best neural network.}
+\label{fig:nnloss}
+\end{figure}
+
+The training loss starts high in the first epoch because it is averaged over
+the early, untrained updates, and then drops quickly. After about two epochs
+the training and validation losses are almost the same and stay flat, so the
+network learned the pattern quickly and does not overfit: the validation loss
+does not rise while the training loss falls.
+
+\subsection{Gradient Boosting (Comparison Model)}
+As a second model we used \texttt{HistGradientBoostingRegressor}. It builds
+many small decision trees one after another, and each new tree learns to
+correct the mistakes of the trees before it. It uses squared error loss and
+adds each tree in the direction that reduces the loss most (gradient
+boosting). We used it to check whether a simpler tree-based model can match
+the neural network on this tabular data.
+
+\subsection{Hyperparameters of Gradient Boosting}
+We tested the learning rate, the maximum tree depth and the number of
+boosting iterations (18 settings, Table~\ref{tab:tuning}).
+
+\begin{table}[H]
+\centering
+\caption{Gradient boosting hyperparameters tested (best row in bold).}
+\label{tab:tuning}
+\begin{tabular}{rrrrrr}
+\toprule
+Learning rate & Max depth & Iterations & MAE & RMSE & $R^2$ \\
+\midrule
+0.05 & 3 & 100 & 188.36 & 405.06 & 0.9899 \\
+0.05 & 3 & 300 & 169.06 & 390.30 & 0.9906 \\
+0.05 & 6 & 100 & 172.63 & 384.05 & 0.9909 \\
+0.05 & 6 & 300 & 154.47 & 368.91 & 0.9916 \\
+0.05 & None & 100 & 171.67 & 377.83 & 0.9912 \\
+0.05 & None & 300 & 156.19 & 370.26 & 0.9916 \\
+0.1 & 3 & 100 & 172.40 & 393.93 & 0.9905 \\
+0.1 & 3 & 300 & 166.25 & 383.65 & 0.9910 \\
+0.1 & 6 & 100 & 155.87 & 371.17 & 0.9915 \\
+0.1 & 6 & 300 & 153.35 & 366.19 & 0.9918 \\
+0.1 & None & 100 & 155.57 & 369.90 & 0.9916 \\
+0.1 & None & 300 & 155.29 & 369.68 & 0.9916 \\
+0.2 & 3 & 100 & 170.34 & 385.84 & 0.9909 \\
+0.2 & 3 & 300 & 162.02 & 373.65 & 0.9914 \\
+0.2 & 6 & 100 & 152.48 & 365.27 & 0.9918 \\
+\textbf{0.2} & \textbf{6} & \textbf{300} & \textbf{151.82} & \textbf{363.48} & \textbf{0.9919} \\
+0.2 & None & 100 & 155.75 & 370.53 & 0.9916 \\
+0.2 & None & 300 & 155.75 & 370.53 & 0.9916 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The best setting (learning rate 0.2, maximum depth 6, 300 iterations) had
+the lowest validation RMSE (363.48) and the highest $R^2$ (0.9919). Shallow
+trees (depth 3) were clearly worse, so the model needs some depth to capture
+how sunlight and temperature work together. Unlimited depth did not help, so
+a depth of 6 is enough. The differences between the best settings are small,
+so the model is not very sensitive to these choices.
+
+\subsection{Model Comparison on the Validation Set}
+\begin{table}[H]
+\centering
+\caption{Best setting of each model on the validation set.}
+\begin{tabular}{lrrr}
+\toprule
+Model & MAE & RMSE & $R^2$ \\
+\midrule
+Neural network (lr 0.001, batch 64, dropout 0) & 174.37 & 398.71 & 0.9902 \\
+Gradient boosting (lr 0.2, depth 6, 300 iterations) & 151.82 & 363.48 & 0.9919 \\
+\bottomrule
+\end{tabular}
+\end{table}
+Both models fit the data very well. Gradient boosting was slightly better on
+every metric, which is common for tabular data with few features. The final
+comparison on the unseen test set is in the evaluation section.
+
+\input{sections/validation_baseline}
+\input{sections/evaluation}
+\input{sections/bias_check}
+\input{sections/limitations}
+\input{sections/contributions}
+
+
+
 \section{Next Steps}
-With the data pipeline complete, the next stage of the project has four parts. First, we will train machine learning models that predict hourly solar output from the weather features and the city, and evaluate them on a held-out test set. Second, we will compare these models against a simple physics-based baseline, so that we can show how much the data-driven approach improves on a fixed formula. Third, we will build a web app where a user selects a city and system size and sees the forecast output, expected savings and nearby retailers from \texttt{data/retailers.csv}. Finally, we will add a chatbot that answers common questions about rooftop solar in Pakistan.
+With the data pipeline built and the models trained and tested, the remaining work has four parts. First, we will test the models more strictly, by training on earlier days and testing on later days instead of splitting rows at random, and by giving them forecast weather instead of plant sensor readings. Second, we will estimate module temperature from air temperature and sunlight, so that the app can supply every input the model needs. Third, we will build the web app where a user selects a city and system size and sees the forecast output, expected savings and nearby retailers from \texttt{data/retailers.csv}. Finally, we will add a chatbot that answers common questions about rooftop solar in Pakistan.
 
 \end{document}

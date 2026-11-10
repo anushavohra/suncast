@@ -108,4 +108,4 @@ To skip training, download the model weights above into `models/` and run `evalu
 The LaTeX source and compiled PDFs are in the `report/` folder:
 
 * Deliverable 1 (Problem Definition and Data Pipeline): [`report/SunCast_Deliverable_1.pdf`](report/SunCast_Deliverable_1.pdf)
-* Deliverable 2 (Model Development and Evaluation): `report/SunCast_Deliverable_2.pdf`, added once the report is final
+* Deliverable 2 (Model Development and Evaluation): [`report/SunCast_Deliverable_2.pdf`](report/SunCast_Deliverable_2.pdf)
