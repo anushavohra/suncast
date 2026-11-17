@@ -4,6 +4,11 @@ SunCast is a web app that tells people in Pakistan how much power a rooftop sola
 
 The forecast comes from a machine learning model trained on historical sunlight, weather, and smog data. The app also includes a chatbot that answers common solar questions and suggests solar retailers in the user's city.
 
+## Live App
+
+* **Web app:** https://suncast-solar.streamlit.app
+* **Backend API:** https://suncast-psi.vercel.app (interactive docs at [/docs](https://suncast-psi.vercel.app/docs))
+
 ## Team
 
 | Member | Role |
@@ -16,6 +21,8 @@ The forecast comes from a machine learning model trained on historical sunlight,
 
 ```
 suncast/
+├── backend/              # FastAPI backend deployed on Vercel (app, weather, physics, predictor, chatbot)
+├── frontend/             # Streamlit frontend deployed on Streamlit Community Cloud
 ├── data_scripts/         # data collection, cleaning, feature engineering, EDA
 │   └── logs/             # logs and cleaning reports (evidence of data collection)
 ├── data/
@@ -102,6 +109,27 @@ python src/bias_check.py          # error by inverter, hour and month
 ```
 
 To skip training, download the model weights above into `models/` and run `evaluate.py` and `bias_check.py` directly.
+
+## Running the App Locally
+
+Backend:
+
+```bash
+cd backend
+pip install -r requirements.txt
+uvicorn app:app --reload
+```
+
+Open http://127.0.0.1:8000/docs to try the endpoints.
+
+Frontend (in a second terminal, from the repo root):
+
+```bash
+pip install -r frontend/requirements.txt
+streamlit run frontend/app.py
+```
+
+The frontend reads the backend URL from Streamlit secrets. The chatbot needs an LLM API key set as an environment variable on the backend; it is never committed to the repo.
 
 ## Report
 
