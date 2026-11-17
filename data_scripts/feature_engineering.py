@@ -1,3 +1,5 @@
+import os
+import joblib
 import numpy as np
 import pandas as pd
 from sklearn.preprocessing import StandardScaler
@@ -31,10 +33,21 @@ data[numeric_cols] = scaler.fit_transform(data[numeric_cols])
 print("Scaled columns:", numeric_cols)
 
 # Remove columns we no longer need
-data = data.drop(columns=["DATE_TIME", "PLANT_ID", "SOURCE_KEY_y", "hour", "month",
-                          "DAILY_YIELD", "TOTAL_YIELD"])
+data = data.drop(columns=[
+    "DATE_TIME", "PLANT_ID", "SOURCE_KEY_y", "hour", "month",
+    "DAILY_YIELD", "TOTAL_YIELD"
+])
 
 # Save the final feature table
 data.to_csv("data/processed/generation_features.csv", index=False)
 print("Final shape (rows, columns):", data.shape)
 print("Saved: data/processed/generation_features.csv")
+
+# Save the scaler and the exact feature order for the app
+feature_cols = [c for c in data.columns if c not in ("DC_POWER", "AC_POWER")]
+os.makedirs("models", exist_ok=True)
+joblib.dump(
+    {"scaler": scaler, "numeric_cols": numeric_cols, "feature_cols": feature_cols},
+    "models/scaler.joblib",
+)
+print("Saved: models/scaler.joblib")
