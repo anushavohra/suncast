@@ -92,7 +92,8 @@ def _answer(message, city=""):
     try:
         r = requests.post(
             API_URL.format(MODEL),
-            headers={"x-goog-api-key": key, "Content-Type": "application/json"},
+            params={"key": key},
+            headers={"Content-Type": "application/json"},
             json=body,
             timeout=20,
         )
@@ -101,7 +102,8 @@ def _answer(message, city=""):
     except Exception as exc:  # network error, quota, wrong model name, ...
         print("Gemini call failed:", exc)
         return faq_fallback(message)
-    
+
+
 def answer(message, city=""):
     """Never crashes: returns a friendly message if anything goes wrong."""
     try:
@@ -109,9 +111,6 @@ def answer(message, city=""):
     except Exception as exc:
         print("Chatbot error:", exc)
         return "Sorry, I could not answer that right now. Please try again in a moment."
-
-
-
 
 
 if __name__ == "__main__":
