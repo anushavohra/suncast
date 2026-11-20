@@ -76,7 +76,7 @@ def _answer(message, city=""):
     message = (message or "").strip()[:MAX_MESSAGE_CHARS]
     if not message:
         return "Please type a question about rooftop solar."
-    key = os.environ.get("GEMINI_API_KEY")
+        key = os.environ.get("GEMINI_API_KEY", "").strip()
     if not key:
         return faq_fallback(message)
 
@@ -92,8 +92,7 @@ def _answer(message, city=""):
     try:
         r = requests.post(
             API_URL.format(MODEL),
-            params={"key": key},
-            headers={"Content-Type": "application/json"},
+            headers={"x-goog-api-key": key, "Content-Type": "application/json"},
             json=body,
             timeout=20,
         )

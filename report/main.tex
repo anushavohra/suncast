@@ -4,6 +4,8 @@
 \usepackage[T1]{fontenc}
 \usepackage{lmodern}
 \usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{xurl}
 \usepackage{booktabs}
 \usepackage{float}
 \usepackage{xcolor}
@@ -12,19 +14,34 @@
 \usepackage{tikz}
 \usetikzlibrary{positioning, arrows.meta}
 
-\hypersetup{colorlinks=true, linkcolor=blue!50!black, urlcolor=blue!50!black}
+\hypersetup{colorlinks=true, linkcolor=blue!50!black, urlcolor=blue!50!black, citecolor=blue!50!black}
 \graphicspath{{figures/}{../figures/}}   % works in Overleaf (figures/) and in the repo (../figures/)
 
 % Red marker for anything a teammate still has to fill in. Search for TODO before submitting.
 \newcommand{\todo}[1]{\textcolor{red}{[TODO: #1]}}
 
-\title{SunCast: Forecasting Rooftop Solar Output and Savings in Pakistan\\
-\large Deliverables 1 and 2: Data Pipeline, Models and Evaluation}
+\title{SunCast: Final Report\\
+\large Forecasting Rooftop Solar Output and Savings in Pakistan}
 \author{Anoosha Rizwan Vohra (24L-3096) \and Kainat Afzal (24L-3084) \and Manumha Nadeem (24L-3097)}
 \date{\today}
 
 \begin{document}
 \maketitle
+
+\begin{abstract}
+Rooftop solar owners in Pakistan have no simple way to estimate how much
+electricity a system will produce or how much it will save. SunCast addresses
+this with a hosted web app that forecasts daily solar generation and savings
+in rupees for five cities. We trained a neural network and a gradient
+boosting model on historical plant data, and gradient boosting performed best
+on the test set (MAE 153.59, $R^2$ 0.9916), about 26\% lower MAE than a
+physics baseline. A FastAPI backend fetches hourly weather forecasts from
+Open-Meteo, rescales the model output to the user's system size, and returns
+kWh and savings per day. A Streamlit frontend shows the forecast, nearby
+retailers and an LLM-based chatbot. The model was trained on only two months
+of data, so forecasts for other seasons rely mainly on the radiation input.
+\end{abstract}
+
 \tableofcontents
 \newpage
 
@@ -33,7 +50,7 @@ Rooftop solar has become one of the most talked about ways for households in Pak
  
  SunCast is a web application that aims to close this gap. A user enters their city, the size of their solar system, and their electricity tariff, and the app forecasts how much power the system will generate over the next few days using live weather data and a machine learning model. The forecast is converted into estimated savings in rupees, and a chatbot answers common solar questions and suggests retailers in the user's city.
  
-This report covers the first two deliverables of the project. The first part defines the problem and builds the data pipeline: the problem and target audience, why machine learning is needed, how we collected, cleaned, and prepared the data, and our exploratory analysis. The second part covers the models: their architecture and hyperparameters, how we split the data for training, validation, and testing, a physics baseline to compare against, and the evaluation, error analysis, and bias check. The report ends with the next steps toward the web application.
+This is the final report for the project and it covers every phase. We start with the problem, who the app is for and why machine learning is needed. Then we explain how we collected, cleaned and prepared the data, and what our exploratory analysis showed. After that we describe the models, how we tested them against a physics baseline, and how fair and accurate they are. The last part covers the hosted web app itself: how the system is put together, how a forecast is produced for a real rooftop, the user interface and the chatbot. We finish with our conclusions and what we would improve next.
  
 
 \section{Problem Statement}
@@ -88,7 +105,7 @@ so many different ways of asking the same question.
 
 \section{Data Cleaning}
 
-We cleaned two datasets: the NASA POWER weather data (\texttt{clean\_nasa.py}) and the Kaggle solar plant data (\texttt{clean\_generation.py}). The Open-Meteo values were validated during the merge, as described in the Data Collection section. Each script prints a before and after summary, and the NASA script saves it to \texttt{data\_scripts/logs/clean\_nasa\_report.txt}.
+We cleaned two datasets: the NASA POWER weather data~\cite{nasapower} (\texttt{clean\_nasa.py}) and the Kaggle solar plant data (\texttt{clean\_generation.py}). The Open-Meteo~\cite{openmeteo} values were validated during the merge, as described in the Data Collection section. Each script prints a before and after summary, and the NASA script saves it to \texttt{data\_scripts/logs/clean\_nasa\_report.txt}.
  
 \subsection{NASA POWER weather data}
  
@@ -166,9 +183,10 @@ The final feature table has 68,711 rows and 31 columns.
 \subsection{Frameworks and Task}
 The task is regression: predict the DC power (kW) of a solar plant from
 weather and time inputs. We built two models and compared them: a neural
-network in PyTorch (\texttt{src/nn\_model.py}) and a gradient boosting model
-in Scikit-Learn (\texttt{src/model.py}). The hyperparameter searches are in
-\texttt{src/tune.py} and \texttt{src/nn\_model.py}.
+network in PyTorch~\cite{pytorch} (\texttt{src/nn\_model.py}) and a gradient
+boosting model in Scikit-Learn~\cite{scikit-learn} (\texttt{src/model.py}).
+The hyperparameter searches are in \texttt{src/tune.py} and
+\texttt{src/nn\_model.py}.
 
 \subsection{Inputs and Target}
 There are 29 input features: ambient temperature, module temperature and
@@ -329,11 +347,27 @@ comparison on the unseen test set is in the evaluation section.
 \input{sections/evaluation}
 \input{sections/bias_check}
 \input{sections/limitations}
+\input{sections/architecture_deployment}
+\input{sections/inference}
+\input{sections/chatbot}
+\input{sections/user_interface}
 \input{sections/contributions}
 
 
+\section{Conclusion and Future Work}
+SunCast delivers a hosted, end-to-end forecast of rooftop solar output and
+savings for five Pakistani cities. Gradient boosting reached a test MAE of
+153.59 and $R^2$ of 0.9916, and the app turns forecast weather into kWh and
+rupees for any system size, with a chatbot and a retailer list for users who
+need help deciding.
 
-\section{Next Steps}
-With the data pipeline built and the models trained and tested, the remaining work has four parts. First, we will test the models more strictly, by training on earlier days and testing on later days instead of splitting rows at random, and by giving them forecast weather instead of plant sensor readings. Second, we will estimate module temperature from air temperature and sunlight, so that the app can supply every input the model needs. Third, we will build the web app where a user selects a city and system size and sees the forecast output, expected savings and nearby retailers from \texttt{data/retailers.csv}. Finally, we will add a chatbot that answers common questions about rooftop solar in Pakistan.
+Future work has three parts. First, a stricter date-based train/test split,
+so the model is tested on later days than it was trained on. Second,
+training on data from a Pakistani plant, since our data comes from a plant in
+India covering only May and June. Third, adding more cities and comparing the
+forecasts against real rooftop output.
+
+\bibliographystyle{plain}
+\bibliography{references}
 
 \end{document}

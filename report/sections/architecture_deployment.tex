@@ -1,14 +1,6 @@
-
-% ============================================================
-% BLOCK 2: new section, save as sections/architecture_deployment.tex
-% and add \input{sections/architecture_deployment} after the
-% Contribution Table / before the User Interface section.
-% Upload system_architecture.png into the figures folder first.
-% ============================================================
-
 \section{System Architecture and Deployment}
 
-SunCast is split into two hosted parts that talk to each other over the internet. The frontend is a Streamlit app that the user sees and clicks around in. The backend is a FastAPI service that does all the real work: it gets the weather forecast, runs the model, works out the savings and answers chat questions. The frontend never runs the model itself. It only sends the user's inputs to the backend and shows what comes back. Figure~\ref{fig:architecture} shows how the pieces fit together.
+SunCast is split into two hosted parts that talk to each other over the internet. The frontend is a Streamlit app that the user sees and clicks around in. The backend is a FastAPI~\cite{fastapi} service that does all the real work: it gets the weather forecast, runs the model, works out the savings and answers chat questions. The frontend never runs the model itself. It only sends the user's inputs to the backend and shows what comes back. Figure~\ref{fig:architecture} shows how the pieces fit together.
 
 \begin{figure}[H]
 \centering
@@ -19,20 +11,22 @@ SunCast is split into two hosted parts that talk to each other over the internet
 
 \subsection{Backend}
 
-The backend lives in the backend folder of the repository and is made up of four small Python files, so each one has a single job:
+The backend lives in the backend folder of the repository and is made up of five small Python files, so each one has a single job:
 
 \begin{itemize}
     \item app.py sets up the FastAPI app, checks the user's inputs and defines the endpoints.
     \item weather.py stores the coordinates of the five cities and gets the hourly forecast from the Open-Meteo API (shortwave radiation and air temperature, in Pakistan time). If the request fails it tries once more before giving up.
     \item physics.py holds the physics formula from our baseline, adapted for a rooftop system.
     \item predictor.py loads the trained gradient boosting model and its scaler and turns the forecast into hourly power for the user's system.
+    \item chatbot.py sends the user's question, the team's FAQ and the city's retailers to the Gemini API and returns the reply. If the call fails it answers from the FAQ instead.
 \end{itemize}
 
 Table~\ref{tab:endpoints} lists the endpoints. The request and response formats were agreed by the whole group before coding started, so the frontend, the backend and the model code could be written at the same time and plugged together at the end.
 
 \begin{table}[H]
 \centering
-\begin{tabular}{lll}
+\small
+\begin{tabular}{p{2.7cm}p{5.2cm}p{6.6cm}}
 \toprule
 Endpoint & Input & What it returns \\
 \midrule
@@ -67,11 +61,13 @@ The physics formula also works as a safety net. If the model files ever fail to 
 Both parts deploy straight from our GitHub repository, and each push to the main branch redeploys them automatically.
 
 \begin{itemize}
-    \item The backend runs on Vercel at https://suncast-psi.vercel.app. Vercel detects FastAPI by itself, so the only setting we changed was the root directory (backend). The chatbot's API key is stored as an environment variable in Vercel's settings and is never committed to Git.
-    \item The frontend runs on Streamlit Community Cloud, with frontend/app.py as the main file and the backend URL stored in Streamlit's secrets.
+    \item The backend runs on Vercel at \url{https://suncast-psi.vercel.app}. Vercel detects FastAPI by itself, so the only setting we changed was the root directory (backend). The Gemini API key and the model name are stored as environment variables in Vercel's settings (GEMINI\_API\_KEY and GEMINI\_MODEL), so the key is never committed to Git and the model can be changed without touching the code. The key is sent to Google in a request header rather than in the URL, so it never shows up in the server logs.
+    \item The frontend runs on Streamlit Community Cloud at \url{https://suncast-solar.streamlit.app}, deployed from the main repository with frontend/app.py as the main file and the backend URL stored in Streamlit's secrets.
 \end{itemize}
 
 Getting the backend online took a few tries. We first set it up for Render and then for Hugging Face Spaces (we even wrote a Dockerfile for it), but by the time we deployed, both asked for a paid plan or a credit card. Vercel's free plan needed neither, ran our FastAPI code without changes, and gives the backend a public HTTPS link. The trade off is a size limit on what can be installed, so we kept the backend's requirements small and separate from the training libraries (PyTorch is not needed at all, since the app uses the gradient boosting model).
+
+Connecting the chatbot also took some debugging. Google now issues Gemini keys in a new format, and the first key we tried was rejected by Google as an unsupported token type, so we used a key from another team account. The default model in our code had also been retired for new users, and the newest model was often overloaded and returned 503 errors. We checked which models the key could use, tested several, and picked gemini-3.5-flash-lite because it answered reliably. Because the chatbot falls back to the FAQ whenever the call fails, the app kept working during all of this.
 
 \subsection{Limitations of the deployment}
 

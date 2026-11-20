@@ -1,0 +1,43 @@
+\section{Chatbot}
+Besides the forecast, SunCast has a chatbot that answers common questions
+about rooftop solar in Pakistan. It is available in the app and runs in the
+backend as the \texttt{/chat} endpoint.
+
+\subsection{Why a Language Model}
+People ask solar questions in everyday language, such as whether a battery is
+worth it or how net billing works, and the same question can be asked in many
+ways, in English, Urdu or Roman Urdu. A rule-based program cannot cover this
+(see the AI Justification section), so the chatbot uses a large language
+model, the Gemini API.
+
+\subsection{Design}
+\begin{itemize}
+  \item \textbf{Knowledge:} a short FAQ file written by the team
+        (\texttt{solar\_faq.md}) on inverter types, batteries, net metering
+        and net billing, savings, cleaning and choosing a retailer, plus the
+        retailers of the user's city from \texttt{data/retailers.csv}. The FAQ
+        and the retailers are sent to the model with every question.
+  \item \textbf{System prompt:} tells the model to give short and simple
+        answers in the user's language, to use only the FAQ and the retailer
+        list for facts, and to say so when it is not sure.
+  \item \textbf{No made-up facts:} the prompt forbids inventing prices,
+        retailers or guaranteed savings, and tells users to confirm current
+        rates with their electricity company or NEPRA. This matters because
+        the net metering rules changed in 2026, when NEPRA replaced net
+        metering with net billing for new applicants.
+  \item \textbf{Each message is answered on its own:} the chatbot does not
+        keep earlier messages.
+\end{itemize}
+
+\subsection{Reliability and Security}
+The API key is stored as an environment variable on the hosting service and
+is never committed to the repository. If the key is missing, or the API fails
+or is over its free limit, the chatbot falls back to the FAQ section that best
+matches the question, so the app keeps working. Messages are cut to 1000
+characters.
+
+\subsection{Limitations}
+The answers are only as good as the FAQ, and a language model can still make
+mistakes, so the chatbot is a helper and not a replacement for a qualified
+installer. The free tier of the API has usage limits, and net billing rates
+may change after this report was written.
